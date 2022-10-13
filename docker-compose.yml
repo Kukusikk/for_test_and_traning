@@ -1,0 +1,13 @@
+version: '3.4'
+
+services:
+  my: &my
+    container_name: my
+    build:
+      context: .
+      target: back_development
+    image: my
+    command: bash
+
+
+# docker-compose run --rm my ruby -rdebug test1.rb
