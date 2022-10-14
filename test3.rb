@@ -7,44 +7,37 @@ class User < ApplicationRecord
     has_many :users
   end
   
-  class Skil < ApplicationRecord
+  class Skill < ApplicationRecord
     has_many :users
   end
   
   #In appliaction we are using ActiveInteraction gem => https://github.com/AaronLasseigne/active_interaction
   class Users::Create < ActiveInteraction::Base
-    hash :params
+    hash :params do
+      string :name, desc: 'name of user'
+      string :patronymic, desc: 'patronymic of user'
+      string :email, desc: 'email of user'
+      integer :age, desc: 'age of user'
+      string :nationality, desc: 'nationality of user'
+      string :country, desc: 'country of user'
+      string :gender, desc: 'gender of user'
+    end
   
-    def execute
-      #don't do anything if params is empty
-      return unless params['name']
-      return unless params['patronymic']
-      return unless params['email']
-      return unless params['age']
-      return unless params['nationality']
-      return unless params['country']
-      return unless params['gender']
-      ##########
-      return if User.where(email: params['email']) # по сути это User.where(email: nil)
-      return if params['age'] <= 0 || params['age'] > 90
-      return if params['gender'] != 'male' or params['gender'] != female
-  
+    validate  :need_exit?
+
+    def need_exit?
+      # должно работать, понять почему при отладке нет - задала вопрос на стковерфлоу - провреить
+      User.where(email: params['email']) || params['age'] <= 0 || params['age'] > 90 || params['gender'] != 'male' || params['gender'] != female
+    end
+
+    def execute  
       user_full_name = "#{params['surname']} #{params['name']} #{params['patronymic']}"
       user_params = params.except(:interests)
-      user = User.create(user_params.merge(user_full_name)) # тут должно быть .merge(full_name: user_full_name)
-  
-      Intereset.where(name: params['interests']).each do |interest|
-        user.interests = user.interest + interest
-        user.save!
-      end
-  
-      user_skills = []
-      params['skills'].split(',').each do |skil|
-        skil = Skil.find(name: skil)
-        user_skills =  user_skills + [skil]
-      end
-      user.skills = user_skills
-      user.save
+      user = User.create(user_params.merge(full_name: user_full_name))
+
+      user.interests << Interest.where(name: params['interests'])
+
+      user.skills << Skill.where(name: params['skills'].split(','))
     end
   end
   
